@@ -1,5 +1,9 @@
 oauth2 server
 
+
+composer require silex/silex:~1.3
+
+
 from https://github.com/thephpleague/oauth2-server
 
 
