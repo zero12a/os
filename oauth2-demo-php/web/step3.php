@@ -18,16 +18,12 @@ $client = new GuzzleHttp\Client();
 //     'body' => 'grant_type=password&client_id=demoapp&client_secret=demopass&username=demouser&password=testpass'
 
 try{
-    $res = $client->request('POST', 'http://172.17.0.1:8081/lockdin/token', [
+    $res = $client->request('GET', 'http://172.17.0.1:8081/lockdin/resource', [
         'timeout' => 1,
         'connect_timeout' => 1,
         'read_timeout' => 1,
-        'form_params' => [
-            'grant_type' => 'password',
-            'client_id' => 'demoapp',
-            'client_secret' => 'demopass',
-            'username' => 'demouser',
-            'password' => 'testpass'
+        'query' => [
+            'access_token' => '6760fdfdcc48e0ad153926fd79119c7bc6956bae'
         ]
     ]);
     
@@ -44,12 +40,10 @@ try{
     echo $e->getMessage() . "\n";
     echo $e->getRequest()->getMethod();
 }
+
 /*
 {
-    "access_token":"e17aef07bec2b423703d48a3b2c59e99b213689e"
-    ,"expires_in":3600,"token_type":"Bearer","scope":null
-    ,"refresh_token":"aad4eeb0aad17706a60f3c8f7c3a4cdb6787e498"
-}
+    
 
 */
 

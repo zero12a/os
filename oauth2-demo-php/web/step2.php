@@ -23,11 +23,10 @@ try{
         'connect_timeout' => 1,
         'read_timeout' => 1,
         'form_params' => [
-            'grant_type' => 'password',
+            'grant_type' => 'refresh_token',
             'client_id' => 'demoapp',
             'client_secret' => 'demopass',
-            'username' => 'demouser',
-            'password' => 'testpass'
+            'refresh_token' => 'aad4eeb0aad17706a60f3c8f7c3a4cdb6787e498'
         ]
     ]);
     
@@ -44,12 +43,12 @@ try{
     echo $e->getMessage() . "\n";
     echo $e->getRequest()->getMethod();
 }
+
 /*
 {
-    "access_token":"e17aef07bec2b423703d48a3b2c59e99b213689e"
+    "access_token":"6760fdfdcc48e0ad153926fd79119c7bc6956bae"
     ,"expires_in":3600,"token_type":"Bearer","scope":null
-    ,"refresh_token":"aad4eeb0aad17706a60f3c8f7c3a4cdb6787e498"
-}
+    ,"refresh_token":"ba67a2912103eb26246eef47f1a84bbd3c461f9f"}
 
 */
 
