@@ -21,7 +21,7 @@ try{
     $res = $client->request('POST', 'http://172.17.0.1:8081/lockdin/token', [
         'timeout' => 1,
         'connect_timeout' => 1,
-        'read_timeout' => 1,
+        'read_timeout' => 2,
         'form_params' => [
             'grant_type' => 'password',
             'client_id' => 'demoapp',

@@ -21,9 +21,9 @@ try{
     $res = $client->request('GET', 'http://172.17.0.1:8081/lockdin/resource', [
         'timeout' => 1,
         'connect_timeout' => 1,
-        'read_timeout' => 1,
+        'read_timeout' => 2,
         'query' => [
-            'access_token' => '6760fdfdcc48e0ad153926fd79119c7bc6956bae'
+            'access_token' => '43af51f689d16005c2ff2b548c23630f85799a09'
         ]
     ]);
     

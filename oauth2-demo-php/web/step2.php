@@ -21,12 +21,13 @@ try{
     $res = $client->request('POST', 'http://172.17.0.1:8081/lockdin/token', [
         'timeout' => 1,
         'connect_timeout' => 1,
-        'read_timeout' => 1,
+        'read_timeout' => 2,
         'form_params' => [
             'grant_type' => 'refresh_token',
             'client_id' => 'demoapp',
             'client_secret' => 'demopass',
-            'refresh_token' => 'aad4eeb0aad17706a60f3c8f7c3a4cdb6787e498'
+            'username' => 'demouser',
+            'refresh_token' => 'f54a77665df71faf03801886e41079aeb91739aa'
         ]
     ]);
     
