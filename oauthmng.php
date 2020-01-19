@@ -234,6 +234,8 @@ class oauthMng
             ,"ERR_CD" => 200
             ,"RTN_MSG" => ""
             ,"RTN_DATA" => array(
+                "USER_INFO" => array()
+                ,"AUTH_INFO" => array()
             )
         );
 
@@ -265,7 +267,9 @@ class oauthMng
             
         }   
 
-        
+        //리턴할 사용자 최소정보
+        $rtnArr["RTN_DATA"]["USER_INFO"] = $result[0];
+
         $map["user_seq"] = $result[0]["user_seq"];
         $map["remote_addr"] = $req->server["remote_addr"];
 
@@ -314,7 +318,8 @@ class oauthMng
             $lastPgmid = $tMap["PGMID"];
         }
         
-        $rtnArr["RTN_DATA"] = $rtnVal;
+        //리턴할 권한 정보
+        $rtnArr["RTN_DATA"]["AUTH_INFO"] = $rtnVal;
 
         return $rtnArr;
     }
