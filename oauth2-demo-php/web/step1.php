@@ -25,7 +25,7 @@ try{
         'form_params' => [
             'grant_type' => 'password',
             'client_id' => 'demoapp',
-            'client_secret' => 'demopass',
+            'client_secret' => 'demopass1',
             'username' => 'demouser',
             'password' => 'testpass'
         ]

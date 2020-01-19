@@ -29,13 +29,70 @@ class oauthMng
     
     //라우팅
     function newToken($req){
-        //10 ID/비번이 맞는지 검사
+
         //$this->DB->setDefer();
 
+        /*
+        //성공시
+        {   
+            "access_token":"a2e9ea946505e9693aafa0182f98e7ea473e82e7"
+            ,"expires_in":3600
+            ,"token_type":"Bearer"
+            ,"scope":"mymenu1 menu2"
+            ,"refresh_token":"3c94f33d797194ac82bf25a5af090a56e7a6a5b0"
+        }
+        */
+
+        $rtnArr = array(
+            "RTN_CD" => 200
+            ,"ERR_CD" => 200
+            ,"RTN_MSG" => ""
+            ,"RTN_DATA" => array(
+                "access_token" => ""
+                ,"expires_in" => 3600
+                ,"token_type" => "Bearer"
+                ,"scope" => "hidden"
+                ,"refresh_token" => ""
+            )
+        );
+
+        //05 client가 유효한지 확인하기
+        $stmt = $this->DB->prepare('select * from oauth_clients where client_id = ? and client_secret = ?');
+        if ($stmt == false){
+            var_dump($this->DB->errno, $this->DB->error);
+            $rtnArr["RTN_CD"] = 500;
+            $rtnArr["ERR_CD"] = 510;
+            $rtnArr["RTN_MSG"] = "make stmt prepare error : (" . $this->DB->errno . ") " . $this->DB->error ;
+            return $rtnArr;
+        }
+        else
+        {
+            echo "client_id = " . $req->get["client_id"] . "\n";
+            //echo "client_secret = " . $req->get["client_secret"] . "\n";
+            //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+
+            $result = $stmt->execute(array($req->get["username"],$req->get["password"]));
+            $stmt->close();
+            var_dump($result);
+
+            //
+            if(trim($result["client_id"]) == ""){
+                $rtnArr["RTN_CD"] = 500;
+                $rtnArr["ERR_CD"] = 511;
+                $rtnArr["RTN_MSG"] = "유효한 client가 아닙니다." ;      
+                return $rtnArr; 
+            }
+        }
+
+        //10 ID/비번이 맞는지 검사
         //$stmt = $this->DB->prepare('select * from oauth_users where username = ? ');
         $stmt = $this->DB->prepare('select * from oauth_users where username=? and password=sha1(?)');
         if ($stmt == false){
-            var_dump($this->DB->errno, $this->DB->error);return;
+            var_dump($this->DB->errno, $this->DB->error);
+            $rtnArr["RTN_CD"] = 500;
+            $rtnArr["ERR_CD"] = 520;
+            $rtnArr["RTN_MSG"] = "make stmt prepare error : (" . $this->DB->errno . ") " . $this->DB->error ;
+            return $rtnArr;
         }
         else
         {
@@ -47,14 +104,16 @@ class oauthMng
             $stmt->close();
             var_dump($result);
         }
-        //20 토큰, 리프토큰 만들고
-        if($result[0]["username"] != ""){
-            $token = $this->uuidgen4();
-        }
         
-        //30 토큰 DB넣고 리턴
+        //20 토큰 DB넣고 리턴
         if($result[0]["username"] != ""){
-            echo "db go\n";
+
+            //31 access token 넣기 
+            echo "db accessTOken go\n";
+            $accessToken = $this->generateAccessToken(); //토큰 만들기
+
+            $rtnArr["RTN_DATA"]["access_token"] = $accessToken;
+
             $stmt = $this->DB->prepare("
                 insert into oauth_access_tokens (
                     access_token, client_id, user_id, expires, scope
@@ -71,10 +130,48 @@ class oauthMng
                 echo "password = " . $req->get["password"] . "\n";
                 //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
     
-                $result = $stmt->execute(array($token, $req->get["client_id"], $req->get["username"]));
+                $result = $stmt->execute(array($accessToken, $req->get["client_id"], $req->get["username"]));
+                $stmt->close();
                 var_dump($result);
-            }            
+            }   
+
+            //32 refresh token 넣기
+            echo "db refreshToken go\n";
+            $refreshToken = $this->generateAccessToken(); //토큰 만들기
+            $rtnArr["RTN_DATA"]["refresh_token"] = $refreshToken;
+
+            $stmt = $this->DB->prepare("
+                insert into oauth_refresh_tokens (
+                    refresh_token, client_id, user_id, expires, scope
+                )values(
+                    ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 DAY),''
+                )
+                ");
+            if ($stmt == false){
+                var_dump($this->DB->errno, $this->DB->error);return;
+            }
+            else
+            {
+                //echo "username = " . $req->get["username"] . "\n";
+                echo "password = " . $req->get["password"] . "\n";
+                //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+    
+                $result = $stmt->execute(array($refreshToken, $req->get["client_id"], $req->get["username"]));
+                $stmt->close();
+                var_dump($result);
+            }   
+
+
+        }else{
+            $rtnArr["RTN_CD"] = 500;
+            $rtnArr["ERR_CD"] = 520;
+            $rtnArr["RTN_MSG"] = "ID 혹은 비밀번호가 일치하지 않습니다." ;
+            return $rtnArr;
         }
+
+
+        return $rtnArr;
+
     }
 
 
@@ -112,6 +209,43 @@ class oauthMng
         
     }
 
+
+        /**
+     * Generates an unique access token.
+     *
+     * Implementing classes may want to override this function to implement
+     * other access token generation schemes.
+     *
+     * @return
+     * An unique access token.
+     *
+     * @ingroup oauth2_section_4
+     */
+    protected function generateAccessToken()
+    {
+        if (function_exists('mcrypt_create_iv')) {
+            $randomData = mcrypt_create_iv(20, MCRYPT_DEV_URANDOM);
+            if ($randomData !== false && strlen($randomData) === 20) {
+                return bin2hex($randomData);
+            }
+        }
+        if (function_exists('openssl_random_pseudo_bytes')) {
+            $randomData = openssl_random_pseudo_bytes(20);
+            if ($randomData !== false && strlen($randomData) === 20) {
+                return bin2hex($randomData);
+            }
+        }
+        if (@file_exists('/dev/urandom')) { // Get 100 bytes of random data
+            $randomData = file_get_contents('/dev/urandom', false, null, 0, 20);
+            if ($randomData !== false && strlen($randomData) === 20) {
+                return bin2hex($randomData);
+            }
+        }
+        // Last resort which you probably should just get rid of:
+        $randomData = mt_rand() . mt_rand() . mt_rand() . mt_rand() . microtime(true) . uniqid(mt_rand(), true);
+
+        return substr(hash('sha512', $randomData), 0, 40);
+    }
 
 	function __toString(){
 		alog("authLog-__toString");
