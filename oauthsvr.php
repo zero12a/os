@@ -1,10 +1,10 @@
 <?php
 
 
-$CFG = require_once "../common/include/incConfig.php";
-require_once "../common/include/incUtil.php";
+$CFG = require_once(__DIR__ . "/../common/include/incConfig.php");
+require_once(__DIR__ . "/../common/include/incUtil.php");
 
-require_once "oauthmng.php";
+require_once(__DIR__ . "/oauthmng.php");
 
 
 
