@@ -94,7 +94,7 @@ class oauthMng
             if(trim($result[0]["client_id"]) == ""){
                 $rtnArr["RTN_CD"] = 500;
                 $rtnArr["ERR_CD"] = 511;
-                $rtnArr["RTN_MSG"] = "유효한 client가 아닙니다." ;      
+                $rtnArr["RTN_MSG"] = "유효한 client가 아닙니다.(Invalid client)" ;      
                 return $rtnArr; 
             }
         }
@@ -368,7 +368,7 @@ class oauthMng
     }
 
 	function __toString(){
-		alog("authLog-__toString");
+		alog("oauthMng-__toString");
     }
 }
 
