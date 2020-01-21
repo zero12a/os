@@ -82,11 +82,11 @@ class oauthMng
         }
         else
         {
-            echo "client_id = " . $req->get["client_id"] . "\n";
-            echo "client_secret = " . $req->get["client_secret"] . "\n";
-            //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+            echo "client_id = " . $req->post["client_id"] . "\n";
+            echo "client_secret = " . $req->post["client_secret"] . "\n";
+            //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
 
-            $result = $stmt->execute(array($req->get["client_id"],$req->get["client_secret"]));
+            $result = $stmt->execute(array($req->post["client_id"],$req->post["client_secret"]));
             $stmt->close();
             var_dump($result);
 
@@ -113,11 +113,11 @@ class oauthMng
         }
         else
         {
-            echo "username = " . $req->get["username"] . "\n";
-            //echo "password = " . $req->get["password"] . "\n";
-            //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+            echo "username = " . $req->post["username"] . "\n";
+            //echo "password = " . $req->post["password"] . "\n";
+            //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
 
-            $result = $stmt->execute(array($req->get["username"],$req->get["password"]));
+            $result = $stmt->execute(array($req->post["username"],$req->post["password"]));
             $stmt->close();
             var_dump($result);
         }
@@ -147,14 +147,14 @@ class oauthMng
             }
             else
             {
-                //echo "username = " . $req->get["username"] . "\n";
-                echo "password = " . $req->get["password"] . "\n";
-                //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+                //echo "username = " . $req->post["username"] . "\n";
+                echo "password = " . $req->post["password"] . "\n";
+                //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
     
                 $result = $stmt->execute(array(
                     $accessToken
-                    , $req->get["client_id"]
-                    , $req->get["username"]
+                    , $req->post["client_id"]
+                    , $req->post["username"]
                     , $map["user_seq"]
                 ));
                 $stmt->close();
@@ -180,14 +180,14 @@ class oauthMng
             }
             else
             {
-                //echo "username = " . $req->get["username"] . "\n";
-                echo "password = " . $req->get["password"] . "\n";
-                //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+                //echo "username = " . $req->post["username"] . "\n";
+                echo "password = " . $req->post["password"] . "\n";
+                //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
     
                 $result = $stmt->execute(array(
                     $refreshToken
-                    , $req->get["client_id"]
-                    , $req->get["username"]
+                    , $req->post["client_id"]
+                    , $req->post["username"]
                     , $map["user_seq"]
                 ));
                 $stmt->close();
@@ -242,6 +242,14 @@ class oauthMng
 
         //10 요청토큰이 유효한지 확인
         $access_token = $req->get["access_token"];
+
+        if(strlen($access_token) < 10){
+            $rtnArr["RTN_CD"] = 500;
+            $rtnArr["ERR_CD"] = 510;
+            $rtnArr["RTN_MSG"] = "요청 토큰 정보가 없습니다. (request get 'access_token')";
+            return $rtnArr;
+        }
+
         $stmt = $this->DB->prepare("
         select TIMESTAMPDIFF(SECOND,now(),expires) as OVERTM, user_seq
         from oauth_access_tokens 
@@ -255,12 +263,12 @@ class oauthMng
             $stmt->close();
             //var_dump($result);
             
-            //echo "OVERTM = " . $result[0]["OVERTM"] . "\n";
+            echo "OVERTM = " . $result[0]["OVERTM"] . "\n";
 
             //값이 0보자 작으면 오류 리턴
             if(intval($result[0]["OVERTM"]) < 0){
                 $rtnArr["RTN_CD"] = 500;
-                $rtnArr["ERR_CD"] = 510;
+                $rtnArr["ERR_CD"] = 520;
                 $rtnArr["RTN_MSG"] = "요청토근이 만료되었습니다.(expires:" . $result[0]["OVERTM"] . ")";
                 return $rtnArr;
             }
@@ -272,6 +280,9 @@ class oauthMng
 
         $map["user_seq"] = $result[0]["user_seq"];
         $map["remote_addr"] = $req->server["remote_addr"];
+
+        echo "user_seq = " . $map["user_seq"] . "\n";
+        echo "remote_addr = " . $map["remote_addr"] . "\n";
 
         //echo json_encode($map, JSON_PRETTY_PRINT);
 
@@ -292,9 +303,9 @@ class oauthMng
         }
         else
         {
-            //echo "username = " . $req->get["username"] . "\n";
-            echo "password = " . $req->get["password"] . "\n";
-            //echo "sha1(password) = " . sha1($req->get["password"]) . "\n";
+            //echo "username = " . $req->post["username"] . "\n";
+            echo "password = " . $req->post["password"] . "\n";
+            //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
 
             $result = $stmt->execute(array(
                 $map["user_seq"]

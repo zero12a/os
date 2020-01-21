@@ -67,6 +67,7 @@ $server->on('Request', function ($req, $res) {
     }
     //var_dump($mysql_res);
     
+    $res->header("Access-Control-Allow-Origin","*");//다른 도메인에서 호출 허용
     $res->end(json_encode($rtnArr));
 });
 
