@@ -3,6 +3,7 @@
 
 $CFG = require_once(__DIR__ . "/../common/include/incConfig.php");
 require_once(__DIR__ . "/../common/include/incUtil.php");
+require_once(__DIR__ . "/../common/include/incSec.php");
 
 require_once(__DIR__ . "/oauthmng.php");
 
@@ -38,7 +39,7 @@ $server->on('WorkerStop', function($serv, $workerId) {
     echo "WorkerStop _______________________________\n";
     //var_dump(get_included_files());
 });
-$server->on('Request', function ($req, $res) {
+$server->on('Request', function ($req, $res)use($CFG){
     echo "Request _______________________________\n";
 
     //var_dump($req);

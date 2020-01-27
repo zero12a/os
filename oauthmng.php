@@ -44,7 +44,9 @@ class oauthMng
     
     //라우팅
     function newToken($req){
+        global $CFG;
 
+        var_dump($CFG);
         //$this->DB->setDefer();
 
         /*
@@ -103,9 +105,9 @@ class oauthMng
 
         //10 ID/비번이 맞는지 검사
         //$stmt = $this->DB->prepare('select * from oauth_users where username = ? ');
-        $stmt = $this->DB->prepare('select * from oauth_users where username=? and password=sha1(?)');
+        $stmt = $this->DB2->prepare('select * from CMN_USR where USR_ID=? and USR_PWD=sha2(concat(?,?),512)');
         if ($stmt == false){
-            var_dump($this->DB->errno, $this->DB->error);
+            var_dump($this->DB2->errno, $this->DB2->error);
             $rtnArr["RTN_CD"] = 500;
             $rtnArr["ERR_CD"] = 520;
             $rtnArr["RTN_MSG"] = "make stmt prepare error : (" . $this->DB->errno . ") " . $this->DB->error ;
@@ -114,18 +116,20 @@ class oauthMng
         else
         {
             echo "username = " . $req->post["username"] . "\n";
-            //echo "password = " . $req->post["password"] . "\n";
-            //echo "sha1(password) = " . sha1($req->post["password"]) . "\n";
+            echo "CFG_SEC_SALT = " . $CFG["CFG_SEC_SALT"] . "\n";
+            echo "password = " . $req->post["password"] . "\n";
+            echo "pwd_hash = " . pwd_hash($req->post["password"],$CFG["CFG_SEC_SALT"]) . "\n";
+            
 
-            $result = $stmt->execute(array($req->post["username"],$req->post["password"]));
+            $result = $stmt->execute(array($req->post["username"],$CFG["CFG_SEC_SALT"],$req->post["password"]));
             $stmt->close();
             var_dump($result);
         }
         
-        $map["user_seq"] = $result[0]["user_seq"];
+        $map["user_seq"] = $result[0]["USR_SEQ"];
 
         //20 토큰 DB넣고 리턴
-        if(trim($result[0]["username"]) != ""){
+        if(trim($map["user_seq"]) != ""){
 
             //31 access token 넣기 
             echo "db accessTOken go\n";
@@ -276,9 +280,26 @@ class oauthMng
         }   
 
         //리턴할 사용자 최소정보
+        $stmt = $this->DB2->prepare("
+        select * 
+        from CMN_USR 
+        where USR_SEQ = ?");
+        if ($stmt == false){
+            var_dump($this->DB2->errno, $this->DB2->error);return;
+        }
+        else
+        {
+            echo "사용자정보 뽑기 user_seq = " . $result[0]["user_seq"] . "\n";
+            $result = $stmt->execute(array($result[0]["user_seq"]));
+            $stmt->close();
+            //var_dump($result);
+        }
+        echo "사용자 정보 result[0]\: ";
+        var_dump($result[0]);
+
         $rtnArr["RTN_DATA"]["USER_INFO"] = $result[0];
 
-        $map["user_seq"] = $result[0]["user_seq"];
+        $map["user_seq"] = $result[0]["USR_SEQ"];
         $map["remote_addr"] = $req->server["remote_addr"];
 
         echo "user_seq = " . $map["user_seq"] . "\n";
