@@ -2,11 +2,8 @@
 
 class oauthMng
 {
-	private $REDIS;
     private $DB;
     private $DB2;
-    public $LAUTH_SEQ;
-    private $PREFIX_SESSION_ID;
 
 	//생성자
 	function __construct(){
