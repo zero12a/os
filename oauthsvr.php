@@ -11,7 +11,8 @@ require_once(__DIR__ . "/oauthmng.php");
 $log = getLoggerSwoole(
 	array(
 	"LIST_NM"=>"log_CG"
-	, "PGM_ID"=>"OAUTHSVR"
+    , "PGM_ID"=>"OAUTHSVR"
+    , "LOG_LEVEL" => Monolog\Logger::INFO
 	)
 );
 echo "\n 555";
@@ -26,7 +27,7 @@ $server->set([
 
 $server->on('task', function(swoole_server $serv, int $task_id, int $src_worker_id, mixed $data) use(&$log){
     echo "on(task) _______________________________\n";
-    $log->info("on(task) _______________________________");
+    $log->debug("on(task) _______________________________");
     //var_dump(get_included_files());
 });
 
@@ -39,25 +40,25 @@ $server->on('finish', function(swoole_server $serv, int $task_id, string $data) 
 
 $server->on('connect', function(swoole_server $server, int $fd, int $from_id) use(&$log) {
     echo "on(connect) _______________________________\n";
-    $log->info("on(connect) _______________________________");
+    $log->debug("on(connect) _______________________________");
     //var_dump(get_included_files());
 });
 
 $server->on('receive', function(swoole_server $server, int $fd, int $reactor_id, string $data) use(&$log) {
     echo "on(receive) _______________________________\n";
-    $log->info("on(receive) _______________________________");
+    $log->debug("on(receive) _______________________________");
     //var_dump(get_included_files());
 });
 
 $server->on('WorkerStart', function($serv, $workerId) use(&$log) {
     echo "WorkerStart _______________________________\n";
-    $log->info("on(WorkerStart) _______________________________");    
+    //$log->info("on(WorkerStart) _______________________________");    
     //var_dump(get_included_files());
 });
 
 $server->on('WorkerStop', function($serv, $workerId) use(&$log) {
     echo "WorkerStop _______________________________\n";
-    $log->info("on(WorkerStop) _______________________________");    
+    $log->debug("on(WorkerStop) _______________________________");    
     //var_dump(get_included_files());
 });
 
