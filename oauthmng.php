@@ -82,7 +82,7 @@ class oauthMng
 
             $result = $stmt->execute(array($req->post["client_id"],$req->post["client_secret"]));
             $stmt->close();
-            var_dump($result);
+            //var_dump($result);
 
             //
             if(trim($result[0]["client_id"]) == ""){
@@ -91,6 +91,8 @@ class oauthMng
                 $rtnArr["RTN_MSG"] = "유효한 client가 아닙니다.(Invalid client)" ;      
                 return $rtnArr; 
             }
+
+            $redirect_uri = $result[0]["redirect_uri"];
         }
 
 
@@ -115,7 +117,7 @@ class oauthMng
 
             $result = $stmt->execute(array($req->post["username"],$CFG["CFG_SEC_SALT"],$req->post["password"]));
             $stmt->close();
-            var_dump($result);
+            //var_dump($result);
         }
         
         $map["user_seq"] = $result[0]["USR_SEQ"];
@@ -154,7 +156,7 @@ class oauthMng
                     , $map["user_seq"]
                 ));
                 $stmt->close();
-                var_dump($result);
+                //var_dump($result);
             }   
 
             //32 refresh token 넣기
@@ -187,9 +189,11 @@ class oauthMng
                     , $map["user_seq"]
                 ));
                 $stmt->close();
-                var_dump($result);
+                //var_dump($result);
             }   
 
+            //모두 성공한 경우 client_id 담아서 리턴
+            $rtnArr["RTN_DATA"]["redirect_uri"] = $redirect_uri;
 
         }else{
             $rtnArr["RTN_CD"] = 500;
