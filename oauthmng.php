@@ -12,21 +12,18 @@ class oauthMng
         
 
         $this->DB = new Swoole\Coroutine\MySQL();
+
+        $cfgDb = $CFG["CFG_DB"]["OS"];
+
         $this->DB->connect([
-            'host' => $CFG["mysql_m_host"],
-            'user' => $CFG["mysql_m_userid"],
-            'password' => $CFG["mysql_m_passwd"],
-            'database' => $CFG["mysql_m_db"],
+            'host' => $cfgDb["HOST"],
+            'user' => $cfgDb["ID"],
+            'password' => $cfgDb["PW"],
+            'database' => $cfgDb["DBNM"],
+            'port' => $cfgDb["PORT"]
         ]);
 
 
-        $this->DB2 = new Swoole\Coroutine\MySQL();
-        $this->DB2->connect([
-            'host' => $CFG["mysql_s_host"],
-            'user' => $CFG["mysql_s_userid"],
-            'password' => $CFG["mysql_s_passwd"],
-            'database' => $CFG["mysql_s_db"],
-        ]);
     }
     //파괴자
 	function __destruct(){
@@ -35,15 +32,13 @@ class oauthMng
         if($this->DB)$this->DB->close();
         unset($this->DB);
 
-        if($this->DB2)$this->DB2->close();
-        unset($this->DB2);
     }
     
     //라우팅
     function newToken($req){
         global $CFG;
 
-        var_dump($CFG);
+        //var_dump($CFG);
         //$this->DB->setDefer();
 
         /*
@@ -102,9 +97,9 @@ class oauthMng
 
         //10 ID/비번이 맞는지 검사
         //$stmt = $this->DB->prepare('select * from oauth_users where username = ? ');
-        $stmt = $this->DB2->prepare('select * from CMN_USR where USR_ID=? and USR_PWD=sha2(concat(?,?),512)');
+        $stmt = $this->DB->prepare('select * from CMN_USR where USR_ID=? and USR_PWD=sha2(concat(?,?),512)');
         if ($stmt == false){
-            var_dump($this->DB2->errno, $this->DB2->error);
+            var_dump($this->DB->errno, $this->DB->error);
             $rtnArr["RTN_CD"] = 500;
             $rtnArr["ERR_CD"] = 520;
             $rtnArr["RTN_MSG"] = "make stmt prepare error : (" . $this->DB->errno . ") " . $this->DB->error ;
@@ -277,12 +272,12 @@ class oauthMng
         }   
 
         //리턴할 사용자 최소정보
-        $stmt = $this->DB2->prepare("
+        $stmt = $this->DB->prepare("
         select * 
         from CMN_USR 
         where USR_SEQ = ?");
         if ($stmt == false){
-            var_dump($this->DB2->errno, $this->DB2->error);return;
+            var_dump($this->DB->errno, $this->DB->error);return;
         }
         else
         {
@@ -305,7 +300,7 @@ class oauthMng
         //echo json_encode($map, JSON_PRETTY_PRINT);
 
         //20 db에서 권한조회해서 리턴하기
-        $stmt = $this->DB2->prepare("
+        $stmt = $this->DB->prepare("
         select b.PGMID, b.AUTH_ID
         from CMN_GRP_USR a
             join CMN_GRP_AUTH b on a.GRP_SEQ = b.GRP_SEQ
@@ -317,7 +312,7 @@ class oauthMng
         order by b.PGMID, b.AUTH_ID
         ");
         if ($stmt == false){
-            var_dump($this->DB2->errno, $this->DB2->error);return;
+            var_dump($this->DB->errno, $this->DB->error);return;
         }
         else
         {
