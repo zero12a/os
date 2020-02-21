@@ -18,7 +18,7 @@ class oauthMng
         $this->DB->connect([
             'host' => $cfgDb["HOST"],
             'user' => $cfgDb["ID"],
-            'password' => $cfgDb["PW"],
+            'password' => aes_decrypt($cfgDb["PW"],$CFG["CFG_SEC_KEY"]),
             'database' => $cfgDb["DBNM"],
             'port' => $cfgDb["PORT"]
         ]);
