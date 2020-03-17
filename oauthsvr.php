@@ -64,7 +64,10 @@ $server->on('WorkerStop', function($serv, $workerId) use(&$log) {
 
 $server->on('Request', function ($req, $res) use($CFG,&$log){
     echo "Request _______________________________\n";
-    $log->info("on(Request) _______________________________");
+    $log->info("on(Request) _______________________________start");
+    $time_start = microtime_float();
+
+
 
     //var_dump($req);
     $logContext = array(
@@ -106,6 +109,10 @@ $server->on('Request', function ($req, $res) use($CFG,&$log){
     
     $res->header("Access-Control-Allow-Origin","*");//다른 도메인에서 호출 허용
     $res->end(json_encode($rtnArr));
+
+    $time_end = microtime_float();
+    $log->info("execute time(seconds) : " . number_format($time_end - $time_start,2));
+    $log->info("on(Request) _______________________________end");    
 });
 
 $server->on("start", function ($server) use($CFG,&$log){
