@@ -22,7 +22,7 @@ var_dump($log);
 
 $server = new Swoole\Http\Server("0.0.0.0", $CFG["CFG_OAUTH_PORT"]); //SWOOLE_BASE is deprecated
 $server->set([
-    'worker_num' => 4,
+    'worker_num' => 30,
 ]);
 
 $server->on('task', function(swoole_server $serv, int $task_id, int $src_worker_id, mixed $data) use(&$log){
