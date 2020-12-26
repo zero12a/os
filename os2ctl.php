@@ -17,8 +17,11 @@ require_once('../common/include/incDB.php');//CG DB
 require_once('../common/include/incSec.php');//CG SEC
 require_once('../common/include/incAuth.php');//CG AUTH
 require_once('../common/include/incUser.php');//CG USER
+
+
 //하위에서 LOADDING LIB 처리
 array_push($_RTIME,array("[TIME 20.IMPORT]",microtime(true)));
+
 $reqToken = reqGetString("TOKEN",37);
 $resToken = uniqid();
 
@@ -28,7 +31,7 @@ $log = getLogger(
 	, "PGM_ID"=>"os2ctl"
 	, "REQTOKEN" => $reqToken
 	, "RESTOKEN" => $resToken
-	, "LOG_LEVEL" => Monolog\Logger::INFO
+	, "LOG_LEVEL" => Monolog\Logger::DEBUG
 	)
 );
 $log->info("Os2Control___________________________start");
@@ -54,6 +57,7 @@ $REQ["remote_addr"] = $_SERVER["REMOTE_ADDR"];
 	"password": "3333"
 }
 */
+array_push($_RTIME,array("[TIME 30.CTL switch]",microtime(true)));
 
 $os2Obj = new os2Mng();
 $rtnArr = array();
@@ -81,6 +85,8 @@ echo json_encode($rtnArr);
 
 
 array_push($_RTIME,array("[TIME 50.SVC]",microtime(true)));
+
+
 if($PGM_CFG["SECTYPE"] == "POWER" || $PGM_CFG["SECTYPE"] == "PI") $objAuth->logUsrAuthD($reqToken,$resToken);;	//권한변경 로그 저장
 	array_push($_RTIME,array("[TIME 60.AUGHD_LOG]",microtime(true)));
 //실행시간 검사
@@ -90,8 +96,7 @@ for($j=1;$j<sizeof($_RTIME);$j++){
 	if($j == sizeof($_RTIME)-1) $log->debug( "RUN TIME : " . number_format($_RTIME[$j][1]-$_RTIME[0][1],4) );
 }
 //서비스 클래스 비우기
-unset($objService);
-unset($objAuth);
+unset($os2Obj);
 
 $log->info("Os2Control___________________________end");
 $log->close(); unset($log);
