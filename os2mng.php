@@ -24,7 +24,7 @@ class os2Mng
     
     //라우팅
     function newToken($req){
-        global $CFG,$log;
+        global $CFG,$log,$_RTIME;
 
         //var_dump($CFG);
         //$this->DB->setDefer();
@@ -74,7 +74,8 @@ class os2Mng
         }
         closeStmt($stmt);
         $redirect_uri = $result[0]["redirect_uri"];
-    
+
+        array_push($_RTIME,array("[TIME 41.SVC CHECK_DB CLIENT]",microtime(true)));
 
         //10 ID/비번이 맞는지 검사
 
@@ -91,6 +92,8 @@ class os2Mng
         closeStmt($stmt);
 
         $map["user_seq"] = $result2[0]["USR_SEQ"];
+
+        array_push($_RTIME,array("[TIME 42.SVC CHECK_DB USER]",microtime(true)));
 
         //20 토큰 DB넣고 리턴
         if(trim($map["user_seq"]) != ""){
@@ -128,6 +131,8 @@ class os2Mng
             }
             closeStmt($stmt);
 
+            array_push($_RTIME,array("[TIME 43.SVC INSERT_DB NEW TOKEN]",microtime(true)));
+
             //32 refresh token 넣기
             //echo "db refreshToken go\n";
             $refreshToken = $this->generateAccessToken(); //토큰 만들기
@@ -155,7 +160,11 @@ class os2Mng
                 return $rtnArr;
             }
             closeStmt($stmt);
-    
+
+            array_push($_RTIME,array("[TIME 44.SVC INSERT_DB REFRESH TOKEN]",microtime(true)));
+
+
+
             //모두 성공한 경우 client_id 담아서 리턴
             $rtnArr["RTN_DATA"]["redirect_uri"] = $redirect_uri;
 

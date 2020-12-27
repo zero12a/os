@@ -36,6 +36,7 @@ $log = getLogger(
 );
 $log->info("Os2Control___________________________start");
 
+array_push($_RTIME,array("[TIME 30.GET LOGGER]",microtime(true)));
 
 //컨트롤 명령 받기
 
@@ -57,7 +58,7 @@ $REQ["remote_addr"] = $_SERVER["REMOTE_ADDR"];
 	"password": "3333"
 }
 */
-array_push($_RTIME,array("[TIME 30.CTL switch]",microtime(true)));
+array_push($_RTIME,array("[TIME 40.CTL switch]",microtime(true)));
 
 $os2Obj = new os2Mng();
 $rtnArr = array();
