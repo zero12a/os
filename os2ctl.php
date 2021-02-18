@@ -7,6 +7,9 @@ header("Pragma:no-cache");
 $_RTIME = array();
 array_push($_RTIME,array("[TIME 00.START]",microtime(true)));
 $CFG = require_once('../common/include/incConfig.php');//CG CONFIG
+
+//print_r($CFG);
+//exit;
 require_once($CFG["CFG_LIBS_VENDOR"]);
 require_once('os2mng.php');
 
@@ -17,7 +20,7 @@ require_once('../common/include/incDB.php');//CG DB
 require_once('../common/include/incSec.php');//CG SEC
 require_once('../common/include/incAuth.php');//CG AUTH
 require_once('../common/include/incUser.php');//CG USER
-
+require_once('../common/include/incLdap.php');//CG LDAP
 
 //하위에서 LOADDING LIB 처리
 array_push($_RTIME,array("[TIME 20.IMPORT]",microtime(true)));

@@ -10,14 +10,14 @@ class os2Mng
         global $CFG;
         alog("os2Mng-__construct");
         
-        $this->DB["OS"] = getDbConn($CFG["CFG_DB"]["OS"]);
+        $this->DB = getDbConn($CFG["CFG_DB"]["RDCOMMON"]);
 
     }
     //파괴자
 	function __destruct(){
         alog("os2Mng-__destruct");
         
-		if($this->DB["OS"])closeDb($this->DB["OS"]);
+		if($this->DB)closeDb($this->DB);
 		unset($this->DB);
 
     }
@@ -57,7 +57,7 @@ class os2Mng
         $sql = "select * from oauth_clients where client_id = #{client_id} and client_secret = #{client_secret}";
 
         $sqlMap = getSqlParam($sql,$coltype="ss",$req);
-        $stmt = getStmt($this->DB["OS"],$sqlMap);
+        $stmt = getStmt($this->DB,$sqlMap);
         $result = getStmtArray($stmt);
     
         $log->info("client_id = " . $req["client_id"] );
@@ -77,21 +77,125 @@ class os2Mng
 
         array_push($_RTIME,array("[TIME 41.SVC CHECK_DB CLIENT]",microtime(true)));
 
-        //10 ID/비번이 맞는지 검사
+        alog("username = " . $req["username"] );
+        alog("password = " . $req["password"] );
+        alog("CFG_LDAP_HOST = " . $CFG["CFG_LDAP_HOST"] );
+        alog("CFG_LDAP_DOMAIN = " . $CFG["CFG_LDAP_DOMAIN"] );
 
-        $log->info("username = " . $req["username"] );
-        $log->info("password = " . $req["password"] );
+        //10 CFG에 LDAP이 활성화 된 경우, 사용자가 LDAP로그인 사용자 인지 확인하기
+        if(  strlen($CFG["CFG_LDAP_HOST"]) > 0  ){
+            //20 사용자 정보에 LDAP_LOGIN_YN = N이면 로컬DB에서 로그인 처리
 
-        $req["CFG_SEC_SALT"] = $CFG["CFG_SEC_SALT"];
+            $sql = "select USR_SEQ, USR_ID, LDAP_LOGIN_YN from CMN_USR where USR_ID= #{username}";
+            $sqlMap = getSqlParam($sql,$coltype="s",$req);
+            $stmt = getStmt($this->DB,$sqlMap);
+            $resultUser = getStmtArray($stmt)[0];
+            closeStmt($stmt);
 
-        $sql = "select USR_SEQ from CMN_USR where USR_ID= #{username} and USR_PWD=sha2(concat(#{CFG_SEC_SALT},#{password}),512)";
-        $sqlMap = getSqlParam($sql,$coltype="sss",$req);
-        $stmt = getStmt($this->DB["OS"],$sqlMap);
-        $result2 = getStmtArray($stmt);
+            if( $resultUser["LDAP_LOGIN_YN"] == "N" ){
+                //30 ID/비번이 맞는지 DB에서 검사
+                $req["CFG_SEC_SALT"] = $CFG["CFG_SEC_SALT"];
 
-        closeStmt($stmt);
+                $sql = "select USR_SEQ from CMN_USR where USR_ID= #{username} and USR_PWD=sha2(concat(#{CFG_SEC_SALT},#{password}),512)";
+                $sqlMap = getSqlParam($sql,$coltype="sss",$req);
+                $stmt = getStmt($this->DB,$sqlMap);
+                $result2 = getStmtArray($stmt);
 
-        $map["user_seq"] = $result2[0]["USR_SEQ"];
+                closeStmt($stmt);
+
+                $map["user_seq"] = $result2[0]["USR_SEQ"];
+                
+            }else{
+                //40 LDAP 로그인 처리
+                $ldap = new ldapClass();
+                $conObj = $ldap->connect($CFG["CFG_LDAP_HOST"]);
+                //echo "<BR>ldap_error : " . ldap_error($conObj);
+                
+                if(!$conObj)JsonMsg("500","202","Ldap connect error " .  ldap_error($conObj));
+
+                if( $ldap->login($CFG["CFG_LDAP_DOMAIN"], $req["username"],$req["password"]) ){
+                    //echo "<BR>로그인 성공";
+
+                    //ldap서버에서 사용자 정보 조회하기
+                    $userLdapMap = $ldap->getUserInfo($CFG["CFG_LDAP_HOST"]);
+
+                    //팀 정보는 신규/재로그인시 모두 반영
+                    $req["USR_ID"] = $req["username"];
+                    $req["USR_NM"] = $userLdapMap["givenname"];
+                    $req["TEAMNM"] = $userLdapMap["department"];
+                    $req["TEAMCD"] = $userLdapMap["departmentnumber"];
+                    //$req["EMAIL"] = $userLdapMap["mail"];
+                    //$req["PHONE"] = $userLdapMap["mobile"];
+
+                    //이미 등록된 사용자 인지 확인하기
+                    if( $resultUser["USR_ID"] . "" != "" ){
+                        $sql = "update CMN_USR set
+                                USR_NM = #{USR_NM}, PHONE = #{PHONE}, TEAMCD = #{TEAMCD}, TEAMNM = #{TEAMNM}, EMAIL = #{EMAIL}
+                                , MOD_DT = date_format(sysdate(),'%Y%m%d%H%i%s'), MOD_ID = 0
+                            where USR_ID = #{USR_ID}
+                        ";
+                        $coltype = "sssss s";
+                    }else{
+                        //로그인 성공시 DB에 사용자 정보 등록(기본 사용자 정보를 바탕으로 로그인 이력도 남겨야하기 때문에)
+
+                        $sql = "insert into CMN_USR (
+                            USR_ID, USR_NM, PHONE, USE_YN, USR_PWD
+                            , PW_ERR_CNT, LAST_STATUS, LOCK_LIMIT_DT, LOCK_LAST_DT, EXPIRE_DT
+                            , PW_CHG_DT, PW_CHG_ID, LDAP_LOGIN_YN, TEAMCD, TEAMNM
+                            , EMAIL
+                            , ADD_DT, ADD_ID
+                            ) values (
+                                #{USR_ID}, #{USR_NM}, #{PHONE}, 'Y', null
+                                ,0, null, null, null, null
+                                , null, null, 'Y', #{TEAMCD}, #{TEAMNM}
+                                , #{EMAIL}
+                                , date_format(sysdate(),'%Y%m%d%H%i%s'), 0
+                            )
+                            ";
+                        $coltype = "sssss s";
+
+                    }
+
+                    $sqlMap = getSqlParam($sql,$coltype,$req);
+                    $stmt = getStmt($this->DB,$sqlMap);
+                    if(!$stmt->execute())JsonMsg("500","102","(Save usr error) stmt 실행 실패 " .  $stmt->error);
+
+                    //usr_SEQ 알아오기
+                    if( $resultUser["USR_ID"] . "" == "" ){
+                        if($stmt instanceof PDOStatement){
+                            alog("SEQYN PDO : " . $this->DB->lastInsertId());
+                            $map["user_seq"] = $this->DB->lastInsertId(); //insert문인 경우 insert id받기                            
+                        }else{
+                            alog("SEQYN Mysqli : " . $this->DB->insert_id);
+                            $map["user_seq"]= $this->DB->insert_id; //insert문인 경우 insert id받기
+                        }
+                    }else{
+                        $map["user_seq"] = $resultUser["USR_SEQ"];    
+                    }
+
+                    closeStmt($stmt);
+
+                }else{
+                    JsonMsg("500","103","(Ldap id/pw login error) stmt 실행 실패 " .  $stmt->error);
+                }
+                $ldap->close();
+            }
+
+        }else{
+            //50 (LDAP설정이 없을때 로컬인증모드) ID/비번이 맞는지 DB에서 검사
+            $req["CFG_SEC_SALT"] = $CFG["CFG_SEC_SALT"];
+
+            $sql = "select USR_SEQ from CMN_USR where USR_ID= #{username} and USR_PWD=sha2(concat(#{CFG_SEC_SALT},#{password}),512)";
+            $sqlMap = getSqlParam($sql,$coltype="sss",$req);
+            $stmt = getStmt($this->DB,$sqlMap);
+            $result2 = getStmtArray($stmt);
+
+            closeStmt($stmt);
+
+            $map["user_seq"] = $result2[0]["USR_SEQ"];
+
+        }
+
 
         array_push($_RTIME,array("[TIME 42.SVC CHECK_DB USER]",microtime(true)));
 
@@ -119,7 +223,7 @@ class os2Mng
             $req["user_id"] = $req["username"];
 
             $sqlMap = getSqlParam($sql,$coltype="sssi",$req);
-            $stmt = getStmt($this->DB["OS"],$sqlMap);
+            $stmt = getStmt($this->DB,$sqlMap);
     
             if(!$stmt->execute()){
                 $rtnArr["RTN_CD"] = 500;
@@ -150,7 +254,7 @@ class os2Mng
             $req["refresh_token"] = $refreshToken;
 
             $sqlMap = getSqlParam($sql,$coltype="sssi",$req);
-            $stmt = getStmt($this->DB["OS"],$sqlMap);
+            $stmt = getStmt($this->DB,$sqlMap);
             if(!$stmt->execute()){
                 $rtnArr["RTN_CD"] = 500;
                 $rtnArr["ERR_CD"] = 160;
@@ -227,7 +331,7 @@ class os2Mng
         where access_token = #{access_token}";
 
         $sqlMap = getSqlParam($sql,$coltype="s",$req);
-        $stmt = getStmt($this->DB["OS"],$sqlMap);
+        $stmt = getStmt($this->DB,$sqlMap);
         $result = getStmtArray($stmt);
 
         closeStmt($stmt);
@@ -262,7 +366,7 @@ class os2Mng
         $req["user_seq"] = $result[0]["user_seq"];
 
         $sqlMap = getSqlParam($sql,$coltype="i",$req);
-        $stmt = getStmt($this->DB["OS"],$sqlMap);
+        $stmt = getStmt($this->DB,$sqlMap);
         $result = getStmtArray($stmt);
 
         $rtnArr["RTN_DATA"]["USER_INFO"] = $result[0];
@@ -282,7 +386,7 @@ class os2Mng
         order by b.PGMID, b.AUTH_ID
         ";
         $sqlMap = getSqlParam($sql,$coltype="is",$req);
-        $stmt = getStmt($this->DB["OS"],$sqlMap);
+        $stmt = getStmt($this->DB,$sqlMap);
         $result2 = getStmtArray($stmt);
 
         
