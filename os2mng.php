@@ -375,17 +375,35 @@ class os2Mng
 
         //20 db에서 권한조회해서 리턴하기
         $sql = "
-        select b.PGMID, b.AUTH_ID
-        from CMN_GRP_USR a
-            join CMN_GRP_AUTH b on a.GRP_SEQ = b.GRP_SEQ
-            join CMN_MNU c on b.PGMID = c.PGMID
-        where a.USR_SEQ = #{user_seq}
-        and c.PGMTYPE IN (
-                select PGMTYPE from CMN_IP where ALLOW_IP = #{remote_addr} or ALLOW_IP = '0.0.0.0'
-            )
-        order by b.PGMID, b.AUTH_ID
+        select
+        *
+        from
+        (
+            select b.PGMID as PGMID, b.AUTH_ID as AUTH_ID
+            from CMN_GRP_USR a
+                join CMN_GRP_AUTH b on a.GRP_SEQ = b.GRP_SEQ
+                join CMN_MNU c on b.PGMID = c.PGMID
+            where a.USR_SEQ = #{user_seq}
+            and c.PGMTYPE IN (
+                    select PGMTYPE from CMN_IP where ALLOW_IP = #{remote_addr} or ALLOW_IP = '0.0.0.0'
+                )
+            union
+            select a2.PGMID as PGMID, a2.AUTH_ID as AUTH_ID
+            from CMN_TEAM_AUTH a2
+                join CMN_MNU b2 on a2.PGMID = b2.PGMID
+            where a2.TEAM_SEQ = 
+                (
+                        select TEAM_SEQ from CMN_TEAM c2 
+                            join CMN_USR d2 on c2.TEAMCD = d2.TEAMCD and d2.USR_SEQ = #{user_seq} 
+                        where d2.TEAMCD is not null and d2.TEAMCD <> ''
+                )
+            and b2.PGMTYPE IN (
+                    select PGMTYPE from CMN_IP where ALLOW_IP = #{remote_addr} or ALLOW_IP = '0.0.0.0'
+                )
+        ) uniondata
+        order by PGMID, AUTH_ID
         ";
-        $sqlMap = getSqlParam($sql,$coltype="is",$req);
+        $sqlMap = getSqlParam($sql,$coltype="isis",$req);
         $stmt = getStmt($this->DB,$sqlMap);
         $result2 = getStmtArray($stmt);
 
