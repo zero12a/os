@@ -379,6 +379,11 @@ class os2Mng
         *
         from
         (
+            /* default auth */
+            select PGMID, AUTH_ID
+            from CMN_DEFAULT_AUTH
+            union
+            /* group auth */
             select b.PGMID as PGMID, b.AUTH_ID as AUTH_ID
             from CMN_GRP_USR a
                 join CMN_GRP_AUTH b on a.GRP_SEQ = b.GRP_SEQ
@@ -388,6 +393,7 @@ class os2Mng
                     select PGMTYPE from CMN_IP where ALLOW_IP = #{remote_addr} or ALLOW_IP = '0.0.0.0'
                 )
             union
+            /* team auth */
             select a2.PGMID as PGMID, a2.AUTH_ID as AUTH_ID
             from CMN_TEAM_AUTH a2
                 join CMN_MNU b2 on a2.PGMID = b2.PGMID
