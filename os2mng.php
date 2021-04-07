@@ -10,6 +10,8 @@ class os2Mng
         global $CFG;
         alog("os2Mng-__construct");
         
+        //print_r($CFG["CFG_DB"]["RDCOMMON"]);
+
         $this->DB = getDbConn($CFG["CFG_DB"]["RDCOMMON"]);
 
     }
